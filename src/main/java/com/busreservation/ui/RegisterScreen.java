@@ -1,5 +1,8 @@
 package com.busreservation.ui;
 
+import com.busreservation.dto.ApiResponse;
+import com.busreservation.dto.UserRegisterDTO;
+import com.busreservation.dto.UserResponseDTO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -42,11 +45,11 @@ public class RegisterScreen {
         // Form container
         VBox containerBox = new VBox();
         containerBox.setAlignment(Pos.CENTER);
-        containerBox.setPadding(new Insets(50, 0, 50, 0));
+        containerBox.setPadding(new Insets(30, 0, 30, 0));
 
-        VBox formBox = new VBox(15);
+        VBox formBox = new VBox(12);
         formBox.setStyle("-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8;");
-        formBox.setPadding(new Insets(40));
+        formBox.setPadding(new Insets(30));
         formBox.setMaxWidth(500);
 
         Label registerTitle = new Label("Register Account");
@@ -55,42 +58,58 @@ public class RegisterScreen {
         formBox.getChildren().add(registerTitle);
         formBox.getChildren().add(new Separator());
 
+        // First Name
+        Label firstNameLabel = new Label("First Name:");
+        firstNameLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
+        TextField firstNameField = new TextField();
+        firstNameField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
+        firstNameField.setPromptText("Enter your first name");
+
+        // Last Name
+        Label lastNameLabel = new Label("Last Name:");
+        lastNameLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
+        TextField lastNameField = new TextField();
+        lastNameField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
+        lastNameField.setPromptText("Enter your last name");
+
         // Username
         Label usernameLabel = new Label("Username:");
         usernameLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
         TextField usernameField = new TextField();
-        usernameField.setStyle("-fx-font-size: 12; -fx-padding: 10; -fx-border-radius: 4;");
-        usernameField.setPromptText("Choose your username");
+        usernameField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
+        usernameField.setPromptText("Choose a unique username");
 
         // Email
         Label emailLabel = new Label("Email Address:");
         emailLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
         TextField emailField = new TextField();
-        emailField.setStyle("-fx-font-size: 12; -fx-padding: 10; -fx-border-radius: 4;");
+        emailField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
         emailField.setPromptText("Enter your email");
 
         // Phone
         Label phoneLabel = new Label("Phone Number:");
         phoneLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
         TextField phoneField = new TextField();
-        phoneField.setStyle("-fx-font-size: 12; -fx-padding: 10; -fx-border-radius: 4;");
-        phoneField.setPromptText("Enter your 10-digit mobile number");
+        phoneField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
+        phoneField.setPromptText("Enter your mobile number");
 
         // Password
         Label passwordLabel = new Label("Password:");
         passwordLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
         PasswordField passwordField = new PasswordField();
-        passwordField.setStyle("-fx-font-size: 12; -fx-padding: 10; -fx-border-radius: 4;");
-        passwordField.setPromptText("Create a strong password");
+        passwordField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
+        passwordField.setPromptText("Create a password (min 6 chars)");
 
         // Confirm Password
         Label confirmPasswordLabel = new Label("Confirm Password:");
         confirmPasswordLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #333;");
         PasswordField confirmPasswordField = new PasswordField();
-        confirmPasswordField.setStyle("-fx-font-size: 12; -fx-padding: 10; -fx-border-radius: 4;");
+        confirmPasswordField.setStyle("-fx-font-size: 12; -fx-padding: 8; -fx-border-radius: 4;");
         confirmPasswordField.setPromptText("Re-enter your password");
 
         formBox.getChildren().addAll(
+                firstNameLabel, firstNameField,
+                lastNameLabel, lastNameField,
                 usernameLabel, usernameField,
                 emailLabel, emailField,
                 phoneLabel, phoneField,
@@ -119,24 +138,50 @@ public class RegisterScreen {
         ));
 
         registerButton.setOnAction(e -> {
+            String firstName = firstNameField.getText().trim();
+            String lastName = lastNameField.getText().trim();
             String username = usernameField.getText().trim();
             String email = emailField.getText().trim();
             String phone = phoneField.getText().trim();
             String password = passwordField.getText();
             String confirmPassword = confirmPasswordField.getText();
 
-            if (username.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
-                showAlert("Error", "All fields are required");
+            if (firstName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Error", "First name, username, email, and password are required");
                 return;
             }
 
             if (!password.equals(confirmPassword)) {
-                showAlert("Error", "Passwords do not match");
+                showAlert(Alert.AlertType.ERROR, "Error", "Passwords do not match");
                 return;
             }
 
-            showAlert("Success", "Registration successful! Please login with your credentials.");
-            navigateToLogin();
+            try {
+                UserRegisterDTO dto = new UserRegisterDTO(
+                        firstName,
+                        lastName.isEmpty() ? firstName : lastName,
+                        email,
+                        username,
+                        password,
+                        confirmPassword,
+                        phone,
+                        "Tamil Nadu",
+                        "Chennai",
+                        "Tamil Nadu",
+                        "600001"
+                );
+
+                ApiResponse<UserResponseDTO> response = navigationContext.getApiClient().register(dto);
+                if (response != null && response.isSuccess()) {
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Registration successful! Account saved to database. Please login with your credentials.");
+                    navigateToLogin();
+                } else {
+                    String msg = (response != null && response.getMessage() != null) ? response.getMessage() : "Registration failed";
+                    showAlert(Alert.AlertType.ERROR, "Registration Failed", msg);
+                }
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to register account: " + ex.getMessage());
+            }
         });
 
         HBox buttonBox = new HBox();
@@ -175,8 +220,8 @@ public class RegisterScreen {
         stage.setScene(scene);
     }
 
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private void showAlert(Alert.AlertType alertType, String title, String message) {
+        Alert alert = new Alert(alertType);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

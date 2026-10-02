@@ -131,6 +131,45 @@ public class AuthController {
     }
 
     /**
+     * Reset password using username or email.
+     * POST /api/v1/auth/reset-password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Boolean>> resetPassword(@RequestBody PasswordResetRequestDTO resetDTO) {
+        log.info("Password reset request received for identifier: {}", resetDTO.getIdentifier());
+
+        try {
+            if (resetDTO == null || resetDTO.getIdentifier() == null || resetDTO.getIdentifier().trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "Email or username is required", false));
+            }
+
+            if (resetDTO.getNewPassword() == null || resetDTO.getNewPassword().trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "New password is required", false));
+            }
+
+            if (resetDTO.getConfirmPassword() == null || !resetDTO.getNewPassword().equals(resetDTO.getConfirmPassword())) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "Passwords do not match", false));
+            }
+
+            UserResponseDTO updatedUser = userService.resetPassword(resetDTO.getIdentifier(), resetDTO.getNewPassword(), resetDTO.getConfirmPassword());
+            log.info("Password reset succeeded for userId: {}", updatedUser.getUserId());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Password reset successfully. Please login with your new password.", true));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Password reset failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, e.getMessage(), false));
+        } catch (Exception e) {
+            log.error("Password reset error: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Password reset failed: " + e.getMessage(), false));
+        }
+    }
+
+    /**
      * Check if email exists
      * GET /api/v1/auth/check-email
      */

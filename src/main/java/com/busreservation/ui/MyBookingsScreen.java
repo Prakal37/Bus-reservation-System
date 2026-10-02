@@ -1,9 +1,10 @@
 package com.busreservation.ui;
 
+import com.busreservation.dto.BookingDTO;
+import com.busreservation.dto.BusDTO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -15,12 +16,15 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyBookingsScreen {
-    private Stage stage;
-    private NavigationContext navigationContext;
+    private final Stage stage;
+    private final NavigationContext navigationContext;
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
 
     public MyBookingsScreen(Stage stage, NavigationContext navigationContext) {
         this.stage = stage;
@@ -28,157 +32,133 @@ public class MyBookingsScreen {
     }
 
     public Parent getView() {
-        VBox root = new VBox(20);
-        root.setStyle("-fx-background-color: #f5f5f5;");
-        root.setPadding(new Insets(30));
+        VBox root = new VBox(0);
+        root.setStyle("-fx-background-color: #f4f7fb;");
 
-        // Header with back button
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(0, 0, 20, 0));
+        VBox headerBox = new VBox(10);
+        headerBox.getStyleClass().add("app-header");
+        headerBox.setPadding(new Insets(18, 26, 18, 26));
 
+        HBox headerRow = new HBox();
+        headerRow.setAlignment(Pos.CENTER_LEFT);
         Button backButton = new Button("← Back to Dashboard");
-        backButton.setStyle(
-                "-fx-font-size: 11; -fx-padding: 8 16 8 16; " +
-                "-fx-background-color: #95a5a6; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        backButton.setOnAction(e -> navigateToDashboard());
+        backButton.getStyleClass().add("ghost-button");
+        backButton.setOnAction(e -> navigationContext.showScene(new DashboardScreen(stage, navigationContext).getView()));
 
         Label titleLabel = new Label("My Bookings");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        titleLabel.setStyle("-fx-text-fill: #2c3e50;");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
+        titleLabel.setStyle("-fx-text-fill: white;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        header.getChildren().addAll(backButton, spacer, titleLabel);
+        Button trackButton = new Button("Track Bus");
+        trackButton.getStyleClass().add("ghost-button");
+        trackButton.setOnAction(e -> navigationContext.showScene(new TrackBusScreen(stage, navigationContext).getView()));
 
-        // Bookings list
-        VBox bookingsListBox = new VBox(15);
-        bookingsListBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
-        bookingsListBox.setPadding(new Insets(20));
+        headerRow.getChildren().addAll(backButton, spacer, titleLabel, trackButton);
+        headerBox.getChildren().add(headerRow);
 
-        // Add current booking if exists
-        if (navigationContext.getBookingConfirmation() != null) {
-            VBox currentBookingCard = createBookingCard(navigationContext.getBookingConfirmation());
-            bookingsListBox.getChildren().add(currentBookingCard);
-            bookingsListBox.getChildren().add(new Separator());
+        VBox contentBox = new VBox(18);
+        contentBox.setPadding(new Insets(24));
+
+        List<BookingDTO> bookings = fetchBookings();
+        if (bookings.isEmpty()) {
+            VBox emptyBox = new VBox(10);
+            emptyBox.getStyleClass().add("card");
+            emptyBox.setPadding(new Insets(24));
+            emptyBox.setMaxWidth(600);
+            Label noBookingsLabel = new Label("You have no bookings yet.");
+            noBookingsLabel.setStyle("-fx-text-fill: #334155; -fx-font-size: 14px; -fx-font-weight: bold;");
+            Button searchButton = new Button("Search Buses");
+            searchButton.getStyleClass().add("secondary-button");
+            searchButton.setOnAction(e -> navigationContext.showScene(new SearchBusScreen(stage, navigationContext).getView()));
+            emptyBox.getChildren().addAll(noBookingsLabel, searchButton);
+            contentBox.getChildren().add(emptyBox);
+        } else {
+            for (BookingDTO booking : bookings) {
+                BusDTO busDetails = fetchBusDetails(booking.getBusId(), booking.getJourneyDate());
+                contentBox.getChildren().add(createBookingCard(booking, busDetails));
+            }
         }
 
-        // Add dummy bookings
-        List<NavigationContext.BookingConfirmation> dummyBookings = generateDummyBookings();
-        for (NavigationContext.BookingConfirmation booking : dummyBookings) {
-            VBox bookingCard = createBookingCard(booking);
-            bookingsListBox.getChildren().add(bookingCard);
-            bookingsListBox.getChildren().add(new Separator());
-        }
-
-        // If no bookings
-        if ((navigationContext.getBookingConfirmation() == null) && dummyBookings.isEmpty()) {
-            Label noBookingsLabel = new Label("You don't have any bookings yet.");
-            noBookingsLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14;");
-            bookingsListBox.getChildren().add(noBookingsLabel);
-        }
-
-        ScrollPane scrollPane = new ScrollPane(bookingsListBox);
+        ScrollPane scrollPane = new ScrollPane(contentBox);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: #f5f5f5; -fx-padding: 0;");
+        scrollPane.setStyle("-fx-background-color: transparent;");
 
-        root.getChildren().addAll(header, new Separator(), scrollPane);
+        root.getChildren().addAll(headerBox, scrollPane);
         return root;
     }
 
-    private VBox createBookingCard(NavigationContext.BookingConfirmation booking) {
-        VBox card = new VBox(10);
-        card.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8;");
-        card.setPadding(new Insets(20));
-
-        // Confirmation number and status
-        HBox topBox = new HBox(15);
-        Label confNumLabel = new Label("Booking ID: " + booking.confirmationNumber);
-        confNumLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        confNumLabel.setStyle("-fx-text-fill: #003d82;");
-
-        Label statusLabel = new Label("✓ CONFIRMED");
-        statusLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 11;");
-        
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-        topBox.getChildren().addAll(confNumLabel, spacer, statusLabel);
-
-        // Bus details
-        VBox busDetailsBox = new VBox(5);
-        Label busOperatorLabel = new Label("Operator: " + booking.bus.busOperator + " (" + booking.bus.busType + ")");
-        busOperatorLabel.setStyle("-fx-text-fill: #333; -fx-font-size: 12;");
-        Label routeLabel = new Label("Route: " + booking.bus.departureCity + " → " + booking.bus.destinationCity);
-        routeLabel.setStyle("-fx-text-fill: #333; -fx-font-size: 12;");
-        Label timeLabel = new Label("Time: " + booking.bus.departureTime + " - " + booking.bus.arrivalTime + " (" + booking.bus.duration + ")");
-        timeLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 11;");
-        Label seatsLabel = new Label("Seats: " + seatsToString(booking.seats));
-        seatsLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
-        busDetailsBox.getChildren().addAll(busOperatorLabel, routeLabel, timeLabel, seatsLabel);
-
-        // Passenger details
-        VBox passengerDetailsBox = new VBox(5);
-        Label passengerNameLabel = new Label("Passenger: " + booking.passengerInfo.passengerName + " (Age: " + booking.passengerInfo.age + ", " + booking.passengerInfo.gender + ")");
-        passengerNameLabel.setStyle("-fx-text-fill: #333; -fx-font-size: 12;");
-        Label phoneLabel = new Label("Phone: " + booking.passengerInfo.mobileNumber);
-        phoneLabel.setStyle("-fx-text-fill: #666; -fx-font-size: 11;");
-        passengerDetailsBox.getChildren().addAll(passengerNameLabel, phoneLabel);
-
-        // Price
-        Label priceLabel = new Label("Total Fare: ₹" + (int)booking.totalPrice);
-        priceLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        priceLabel.setStyle("-fx-text-fill: #27ae60;");
-
-        card.getChildren().addAll(
-                topBox,
-                new Separator(),
-                busDetailsBox,
-                new Separator(),
-                passengerDetailsBox,
-                new Separator(),
-                priceLabel
-        );
-
-        return card;
-    }
-
-    private List<NavigationContext.BookingConfirmation> generateDummyBookings() {
-        List<NavigationContext.BookingConfirmation> bookings = new ArrayList<>();
-
-        // Tamil Nadu booking 1
-        NavigationContext.Bus bus1 = new NavigationContext.Bus(
-                10, "TNSTC Express", "Standard", "Chennai", "Madurai", "08:30 PM", "05:00 AM", "8h 30m", 480, 50, 24
-        );
-        NavigationContext.PassengerInfo passenger1 = new NavigationContext.PassengerInfo("Raj Kumar", 28, "Male", "rajkumar@example.com", "9876543210");
-        String[] seats1 = {"A2", "A3"};
-        bookings.add(new NavigationContext.BookingConfirmation("TNBR20260831001", bus1, seats1, passenger1, 960));
-
-        // Tamil Nadu booking 2
-        NavigationContext.Bus bus2 = new NavigationContext.Bus(
-                11, "KPN Travels", "AC Seater", "Coimbatore", "Chennai", "10:15 PM", "06:15 AM", "8h", 650, 45, 12
-        );
-        NavigationContext.PassengerInfo passenger2 = new NavigationContext.PassengerInfo("Priya Sharma", 32, "Female", "priya@example.com", "9876543211");
-        String[] seats2 = {"B4"};
-        bookings.add(new NavigationContext.BookingConfirmation("TNBR20260905002", bus2, seats2, passenger2, 650));
-
-        return bookings;
-    }
-
-    private String seatsToString(String[] seats) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < seats.length; i++) {
-            sb.append(seats[i]);
-            if (i < seats.length - 1) sb.append(", ");
+    private List<BookingDTO> fetchBookings() {
+        try {
+            Long userId = navigationContext.getUserId();
+            String token = navigationContext.getJwtToken();
+            if (userId != null) {
+                return navigationContext.getApiClient().getBookingsByUser(userId, token);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to fetch bookings: " + e.getMessage());
         }
-        return sb.toString();
+        return new ArrayList<>();
     }
 
-    private void navigateToDashboard() {
-        DashboardScreen dashboardScreen = new DashboardScreen(stage, navigationContext);
-        Scene scene = new Scene(dashboardScreen.getView(), 1100, 750);
-        stage.setScene(scene);
+    private BusDTO fetchBusDetails(Long busId, String journeyDate) {
+        try {
+            return navigationContext.getApiClient().getBusById(busId, journeyDate);
+        } catch (Exception e) {
+            System.err.println("Failed to fetch bus details for busId " + busId + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    private VBox createBookingCard(BookingDTO booking, BusDTO bus) {
+        VBox card = new VBox(10);
+        card.getStyleClass().add("card");
+        card.setPadding(new Insets(20));
+        card.setMaxWidth(900);
+
+        HBox topBox = new HBox(12);
+        String bookingRef = booking.getBookingReference() != null ? booking.getBookingReference() : "ID-" + booking.getBookingId();
+        Label refLabel = new Label("Booking Ref: " + bookingRef);
+        refLabel.setStyle("-fx-text-fill: #0d47a1; -fx-font-size: 12px; -fx-font-weight: bold;");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        String status = booking.getBookingStatus() != null ? booking.getBookingStatus() : "CONFIRMED";
+        Label statusLabel = new Label("✓ " + status.toUpperCase());
+        statusLabel.setStyle("-fx-text-fill: #16a34a; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 5 10 5 10; -fx-background-color: #e8f5e9; -fx-background-radius: 999px;");
+        topBox.getChildren().addAll(refLabel, spacer, statusLabel);
+
+        VBox details = new VBox(8);
+        if (bus != null) {
+            String source = bus.getRoute() != null && bus.getRoute().getSource() != null ? bus.getRoute().getSource() : "?";
+            String destination = bus.getRoute() != null && bus.getRoute().getDestination() != null ? bus.getRoute().getDestination() : "?";
+            Label routeLabel = new Label("Route: " + source + " → " + destination);
+            routeLabel.setStyle("-fx-text-fill: #0f172a; -fx-font-size: 12px;");
+            Label busLabel = new Label("Bus: " + (bus.getBusName() != null ? bus.getBusName() : "Bus") + " / " + (bus.getBusType() != null ? bus.getBusType() : "Standard"));
+            busLabel.setStyle("-fx-text-fill: #334155; -fx-font-size: 12px;");
+            Label timeLabel = new Label("Travel Date: " + booking.getJourneyDate() + " • " + (bus.getDepartureTime() != null ? bus.getDepartureTime() : "") + " - " + (bus.getArrivalTime() != null ? bus.getArrivalTime() : ""));
+            timeLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 11px;");
+            details.getChildren().addAll(routeLabel, busLabel, timeLabel);
+        } else {
+            Label fallback = new Label("Bus ID: " + booking.getBusId() + " • Date: " + booking.getJourneyDate());
+            fallback.setStyle("-fx-text-fill: #334155; -fx-font-size: 12px;");
+            details.getChildren().add(fallback);
+        }
+
+        Label seatLabel = new Label("Seat(s): " + booking.getSeatNumbers() + " • Passenger: " + booking.getPassengerName());
+        seatLabel.setStyle("-fx-text-fill: #1e293b; -fx-font-size: 12px; -fx-font-weight: bold;");
+        Label priceLabel = new Label("Total Fare: ₹" + (booking.getTotalPrice() != null ? booking.getTotalPrice().intValue() : 0));
+        priceLabel.setStyle("-fx-text-fill: #16a34a; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Button detailsButton = new Button("View Details");
+        detailsButton.getStyleClass().add("ghost-button");
+        detailsButton.setOnAction(e -> {
+            // Read-only detail summary; no backend cancellation logic is available here.
+        });
+
+        details.getChildren().addAll(seatLabel, priceLabel, detailsButton);
+        card.getChildren().addAll(topBox, new Separator(), details);
+        return card;
     }
 }

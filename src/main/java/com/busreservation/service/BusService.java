@@ -196,6 +196,10 @@ public class BusService {
         // Calculate available seats if journey date is provided
         if (journeyDate != null && !journeyDate.isEmpty()) {
             long availableSeats = seatRepository.countAvailableSeats(bus.getBusId(), journeyDate);
+            // If no seats have been initialized for this date yet, all seats are available
+            if (availableSeats == 0 && seatRepository.findByBusAndBookingDate(bus, journeyDate).isEmpty()) {
+                availableSeats = bus.getTotalSeats();
+            }
             busDTO.setAvailableSeats(availableSeats);
         } else {
             busDTO.setAvailableSeats((long) bus.getTotalSeats());

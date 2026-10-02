@@ -1,25 +1,53 @@
 package com.busreservation.ui;
 
+import com.busreservation.dto.BookingDTO;
+import com.busreservation.dto.BusDTO;
+import com.busreservation.dto.UserResponseDTO;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
+
+import java.util.Objects;
 
 /**
  * Manages navigation and session state across all screens
  */
 public class NavigationContext {
     private Stage stage;
+    private Long userId;
     private String loggedInUser;
+    private String jwtToken;
+    private UserResponseDTO currentUser;
+
     private SearchQuery searchQuery;
     private Bus selectedBus;
+    private BusDTO selectedBusDTO;
     private String[] selectedSeats;
     private PassengerInfo passengerInfo;
     private BookingConfirmation bookingConfirmation;
+    private BookingDTO createdBookingDTO;
+
+    private final ApiClient apiClient;
 
     public NavigationContext(Stage stage) {
         this.stage = stage;
+        this.apiClient = new ApiClient();
+    }
+
+    public ApiClient getApiClient() {
+        return apiClient;
     }
 
     public Stage getStage() {
         return stage;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getLoggedInUser() {
@@ -28,6 +56,26 @@ public class NavigationContext {
 
     public void setLoggedInUser(String username) {
         this.loggedInUser = username;
+    }
+
+    public String getJwtToken() {
+        return jwtToken;
+    }
+
+    public void setJwtToken(String jwtToken) {
+        this.jwtToken = jwtToken;
+    }
+
+    public UserResponseDTO getCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(UserResponseDTO currentUser) {
+        this.currentUser = currentUser;
+        if (currentUser != null) {
+            this.userId = currentUser.getUserId();
+            this.loggedInUser = currentUser.getUsername();
+        }
     }
 
     public SearchQuery getSearchQuery() {
@@ -44,6 +92,41 @@ public class NavigationContext {
 
     public void setSelectedBus(Bus bus) {
         this.selectedBus = bus;
+    }
+
+    public BusDTO getSelectedBusDTO() {
+        return selectedBusDTO;
+    }
+
+    public void setSelectedBusDTO(BusDTO selectedBusDTO) {
+        this.selectedBusDTO = selectedBusDTO;
+        if (selectedBusDTO != null) {
+            // Resolve source/destination from nested RouteDTO
+            String src = "";
+            String dest = "";
+            String duration = "8h";
+            if (selectedBusDTO.getRoute() != null) {
+                src = selectedBusDTO.getRoute().getSource() != null ? selectedBusDTO.getRoute().getSource() : "";
+                dest = selectedBusDTO.getRoute().getDestination() != null ? selectedBusDTO.getRoute().getDestination() : "";
+                Integer hrs = selectedBusDTO.getRoute().getApproximateDurationHours();
+                duration = hrs != null ? hrs + "h" : "8h";
+            }
+            int availSeats = selectedBusDTO.getAvailableSeats() != null ? (int) (long) selectedBusDTO.getAvailableSeats() : 40;
+            // Map BusDTO to legacy UI Bus object for backwards compatibility
+            this.selectedBus = new Bus(
+                    selectedBusDTO.getBusId().intValue(),
+                    selectedBusDTO.getOperatorName() != null ? selectedBusDTO.getOperatorName() : selectedBusDTO.getBusName(),
+                    selectedBusDTO.getBusType() != null ? selectedBusDTO.getBusType() : "Standard",
+                    src,
+                    dest,
+                    selectedBusDTO.getDepartureTime() != null ? selectedBusDTO.getDepartureTime() : "",
+                    selectedBusDTO.getArrivalTime() != null ? selectedBusDTO.getArrivalTime() : "",
+                    duration,
+                    selectedBusDTO.getPricePerSeat() != null ? selectedBusDTO.getPricePerSeat() : 0.0,
+                    selectedBusDTO.getTotalSeats() != null ? selectedBusDTO.getTotalSeats() : 40,
+                    availSeats
+            );
+        }
     }
 
     public String[] getSelectedSeats() {
@@ -70,13 +153,45 @@ public class NavigationContext {
         this.bookingConfirmation = confirmation;
     }
 
-    public void logout() {
-        this.loggedInUser = null;
-        this.searchQuery = null;
+    public BookingDTO getCreatedBookingDTO() {
+        return createdBookingDTO;
+    }
+
+    public void setCreatedBookingDTO(BookingDTO createdBookingDTO) {
+        this.createdBookingDTO = createdBookingDTO;
+    }
+
+    public Scene buildScene(Parent root) {
+        Scene scene = new Scene(root, 1100, 750);
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm());
+        return scene;
+    }
+
+    public void showScene(Parent root) {
+        stage.setScene(buildScene(root));
+    }
+
+    public void clearBookingFlow() {
         this.selectedBus = null;
+        this.selectedBusDTO = null;
         this.selectedSeats = null;
         this.passengerInfo = null;
         this.bookingConfirmation = null;
+        this.createdBookingDTO = null;
+    }
+
+    public void logout() {
+        this.userId = null;
+        this.loggedInUser = null;
+        this.jwtToken = null;
+        this.currentUser = null;
+        this.searchQuery = null;
+        this.selectedBus = null;
+        this.selectedBusDTO = null;
+        this.selectedSeats = null;
+        this.passengerInfo = null;
+        this.bookingConfirmation = null;
+        this.createdBookingDTO = null;
     }
 
     // Data Models for Frontend Only

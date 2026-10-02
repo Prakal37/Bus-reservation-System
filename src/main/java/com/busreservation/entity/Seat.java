@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "seats", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"bus_id", "seat_number"})
+        @UniqueConstraint(columnNames = {"bus_id", "seat_number", "booking_date"})
 })
 public class Seat {
 

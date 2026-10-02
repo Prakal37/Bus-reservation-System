@@ -22,6 +22,8 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     List<Seat> findByBusAndBookingDate(Bus bus, String bookingDate);
     
     Optional<Seat> findByBusAndSeatNumber(Bus bus, Integer seatNumber);
+
+    Optional<Seat> findByBusAndSeatNumberAndBookingDate(Bus bus, Integer seatNumber, String bookingDate);
     
     @Query("SELECT COUNT(s) FROM Seat s WHERE s.bus.busId = :busId AND s.isAvailable = true AND s.bookingDate = :bookingDate")
     long countAvailableSeats(@Param("busId") Long busId, @Param("bookingDate") String bookingDate);

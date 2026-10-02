@@ -3,8 +3,11 @@ package com.busreservation.ui;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -14,8 +17,8 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class PassengerDetailsScreen {
-    private Stage stage;
-    private NavigationContext navigationContext;
+    private final Stage stage;
+    private final NavigationContext navigationContext;
 
     public PassengerDetailsScreen(Stage stage, NavigationContext navigationContext) {
         this.stage = stage;
@@ -23,181 +26,135 @@ public class PassengerDetailsScreen {
     }
 
     public Parent getView() {
-        VBox root = new VBox(20);
-        root.setStyle("-fx-background-color: #f5f5f5;");
-        root.setPadding(new Insets(30));
+        VBox root = new VBox(18);
+        root.setPadding(new Insets(28));
+        root.setStyle("-fx-background-color: #f4f7fb;");
 
-        // Header with back button
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(0, 0, 20, 0));
-
-        Button backButton = new Button("← Back");
-        backButton.setStyle(
-                "-fx-font-size: 11; -fx-padding: 8 16 8 16; " +
-                "-fx-background-color: #95a5a6; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        backButton.setOnAction(e -> navigateToSeatSelection());
+        header.setPadding(new Insets(0, 0, 8, 0));
+        Button backButton = new Button("← Back to Seat Selection");
+        backButton.getStyleClass().add("ghost-button");
+        backButton.setOnAction(e -> navigationContext.showScene(new SeatSelectionScreen(stage, navigationContext).getView()));
 
         Label titleLabel = new Label("Passenger Details");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        titleLabel.setStyle("-fx-text-fill: #2c3e50;");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 26));
+        titleLabel.setStyle("-fx-text-fill: #0f172a;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
+        Button homeButton = new Button("Home");
+        homeButton.getStyleClass().add("ghost-button");
+        homeButton.setOnAction(e -> navigationContext.showScene(new DashboardScreen(stage, navigationContext).getView()));
 
-        header.getChildren().addAll(backButton, spacer, titleLabel);
+        header.getChildren().addAll(backButton, spacer, titleLabel, homeButton);
 
-        // Form
-        VBox formBox = new VBox(15);
-        formBox.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 4; -fx-background-radius: 4;");
-        formBox.setPadding(new Insets(30));
-        formBox.setMaxWidth(500);
-        formBox.setAlignment(Pos.TOP_CENTER);
+        HBox content = new HBox(20);
+        content.setAlignment(Pos.TOP_LEFT);
 
-        // Selected bus info
-        NavigationContext.Bus bus = navigationContext.getSelectedBus();
-        String[] seats = navigationContext.getSelectedSeats();
+        VBox formBox = new VBox(12);
+        formBox.getStyleClass().add("card");
+        formBox.setPadding(new Insets(22));
+        formBox.setPrefWidth(520);
 
-        Label busInfoLabel = new Label("Bus: " + bus.busOperator + " | Seats: " + seatsToString(seats) + " | Price per seat: ₹" + (int)bus.price);
-        busInfoLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
-
-        // Passenger Name
-        Label nameLabel = new Label("Full Name:");
-        nameLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #2c3e50; -fx-font-weight: bold;");
+        Label nameLabel = new Label("Full Name");
+        nameLabel.getStyleClass().add("form-label");
         TextField nameField = new TextField();
-        nameField.setPromptText("Enter your full name");
-        nameField.setStyle("-fx-font-size: 12; -fx-padding: 8;");
+        nameField.getStyleClass().add("input-field");
+        if (navigationContext.getCurrentUser() != null) {
+            nameField.setText(navigationContext.getCurrentUser().getFirstName() + " " + navigationContext.getCurrentUser().getLastName());
+        }
 
-        // Age
-        Label ageLabel = new Label("Age:");
-        ageLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #2c3e50; -fx-font-weight: bold;");
-        TextField ageField = new TextField();
-        ageField.setPromptText("Enter your age");
-        ageField.setStyle("-fx-font-size: 12; -fx-padding: 8;");
+        Label ageLabel = new Label("Age");
+        ageLabel.getStyleClass().add("form-label");
+        TextField ageField = new TextField("25");
+        ageField.getStyleClass().add("input-field");
 
-        // Gender
-        Label genderLabel = new Label("Gender:");
-        genderLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #2c3e50; -fx-font-weight: bold;");
+        Label genderLabel = new Label("Gender");
+        genderLabel.getStyleClass().add("form-label");
         ComboBox<String> genderBox = new ComboBox<>();
         genderBox.getItems().addAll("Male", "Female", "Other");
-        genderBox.setStyle("-fx-font-size: 12; -fx-padding: 8;");
+        genderBox.setValue("Male");
+        genderBox.setPrefWidth(200);
+        genderBox.getStyleClass().add("input-field");
 
-        // Email
-        Label emailLabel = new Label("Email:");
-        emailLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #2c3e50; -fx-font-weight: bold;");
+        Label emailLabel = new Label("Email");
+        emailLabel.getStyleClass().add("form-label");
         TextField emailField = new TextField();
-        emailField.setPromptText("Enter your email address");
-        emailField.setStyle("-fx-font-size: 12; -fx-padding: 8;");
+        emailField.getStyleClass().add("input-field");
+        if (navigationContext.getCurrentUser() != null) {
+            emailField.setText(navigationContext.getCurrentUser().getEmail());
+        }
 
-        // Phone
-        Label phoneLabel = new Label("Phone Number:");
-        phoneLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #2c3e50; -fx-font-weight: bold;");
+        Label phoneLabel = new Label("Phone Number");
+        phoneLabel.getStyleClass().add("form-label");
         TextField phoneField = new TextField();
-        phoneField.setPromptText("Enter your phone number");
-        phoneField.setStyle("-fx-font-size: 12; -fx-padding: 8;");
+        phoneField.getStyleClass().add("input-field");
+        if (navigationContext.getCurrentUser() != null && navigationContext.getCurrentUser().getPhoneNumber() != null) {
+            phoneField.setText(navigationContext.getCurrentUser().getPhoneNumber());
+        }
 
-        // Proceed button
-        Button proceedButton = new Button("Proceed to Confirmation");
-        proceedButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #27ae60; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        proceedButton.setOnMouseEntered(e -> proceedButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #229954; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        proceedButton.setOnMouseExited(e -> proceedButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #27ae60; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-
-        proceedButton.setOnAction(e -> {
-            String name = nameField.getText().trim();
-            String ageStr = ageField.getText().trim();
+        Button continueButton = new Button("Continue to Payment");
+        continueButton.getStyleClass().add("primary-button");
+        continueButton.setOnAction(e -> {
+            String name = nameField.getText() == null ? "" : nameField.getText().trim();
+            String ageText = ageField.getText() == null ? "" : ageField.getText().trim();
             String gender = genderBox.getValue();
-            String email = emailField.getText().trim();
-            String phone = phoneField.getText().trim();
+            String email = emailField.getText() == null ? "" : emailField.getText().trim();
+            String phone = phoneField.getText() == null ? "" : phoneField.getText().trim();
 
-            if (name.isEmpty() || ageStr.isEmpty() || gender == null || email.isEmpty() || phone.isEmpty()) {
-                showAlert("Error", "Please fill all fields");
+            if (name.isEmpty() || ageText.isEmpty() || gender == null || email.isEmpty() || phone.isEmpty()) {
+                showAlert("Missing details", "Please fill in all passenger details before continuing.");
                 return;
             }
-
             int age;
             try {
-                age = Integer.parseInt(ageStr);
+                age = Integer.parseInt(ageText);
             } catch (NumberFormatException ex) {
-                showAlert("Error", "Please enter a valid age");
+                showAlert("Invalid age", "Please enter a valid age.");
                 return;
             }
-
-            NavigationContext.PassengerInfo passengerInfo = new NavigationContext.PassengerInfo(name, age, gender, email, phone);
-            navigationContext.setPassengerInfo(passengerInfo);
-
-            // Generate booking confirmation number with TNBR format
-            long timestamp = System.currentTimeMillis();
-            String confirmationNumber = "TNBR" + timestamp;
-            double totalPrice = bus.price * seats.length;
-            NavigationContext.BookingConfirmation confirmation = 
-                    new NavigationContext.BookingConfirmation(confirmationNumber, bus, seats, passengerInfo, totalPrice);
-            navigationContext.setBookingConfirmation(confirmation);
-
-            navigateToConfirmation();
+            navigationContext.setPassengerInfo(new NavigationContext.PassengerInfo(name, age, gender, email, phone));
+            navigationContext.showScene(new PaymentScreen(stage, navigationContext).getView());
         });
 
-        HBox buttonBox = new HBox();
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().add(proceedButton);
+        formBox.getChildren().addAll(nameLabel, nameField, ageLabel, ageField, genderLabel, genderBox, emailLabel, emailField, phoneLabel, phoneField, continueButton);
 
-        formBox.getChildren().addAll(
-                busInfoLabel,
-                new Separator(),
-                nameLabel,
-                nameField,
-                ageLabel,
-                ageField,
-                genderLabel,
-                genderBox,
-                emailLabel,
-                emailField,
-                phoneLabel,
-                phoneField,
-                new Separator(),
-                buttonBox
-        );
+        VBox summaryBox = new VBox(14);
+        summaryBox.getStyleClass().add("card");
+        summaryBox.setPadding(new Insets(20));
+        summaryBox.setPrefWidth(300);
 
-        root.getChildren().addAll(header, new Separator(), formBox);
+        Label summaryTitle = new Label("Booking Summary");
+        summaryTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        summaryTitle.setStyle("-fx-text-fill: #0f172a;");
+
+        NavigationContext.Bus bus = navigationContext.getSelectedBus();
+        NavigationContext.SearchQuery query = navigationContext.getSearchQuery();
+        String[] seats = navigationContext.getSelectedSeats();
+        String route = query != null ? query.departureCity + " → " + query.destinationCity : "Chennai → Madurai";
+        String travelDate = query != null ? query.date : "2026-10-01";
+        double pricePerSeat = bus != null ? bus.price : 500.0;
+        int totalFare = (seats == null || seats.length == 0 ? 1 : seats.length) * (int) pricePerSeat;
+
+        Label busLine = new Label((bus != null ? bus.busOperator : "Bus") + " • " + route);
+        busLine.setWrapText(true);
+        busLine.setStyle("-fx-text-fill: #334155; -fx-font-size: 12px;");
+        Label dateLine = new Label("Travel date: " + travelDate);
+        dateLine.setStyle("-fx-text-fill: #334155; -fx-font-size: 12px;");
+        Label seatLine = new Label("Seat(s): " + (seats == null || seats.length == 0 ? "A1" : String.join(", ", seats)));
+        seatLine.setStyle("-fx-text-fill: #16a34a; -fx-font-size: 12px; -fx-font-weight: bold;");
+        Label fareLine = new Label("Fare: ₹" + totalFare);
+        fareLine.setStyle("-fx-text-fill: #0d47a1; -fx-font-weight: bold; -fx-font-size: 18px;");
+
+        summaryBox.getChildren().addAll(summaryTitle, new Separator(), busLine, dateLine, seatLine, fareLine);
+        content.getChildren().addAll(formBox, summaryBox);
+        root.getChildren().addAll(header, content);
         return root;
     }
 
-    private String seatsToString(String[] seats) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < seats.length; i++) {
-            sb.append(seats[i]);
-            if (i < seats.length - 1) sb.append(", ");
-        }
-        return sb.toString();
-    }
-
-    private void navigateToSeatSelection() {
-        SeatSelectionScreen seatSelectionScreen = new SeatSelectionScreen(stage, navigationContext);
-        Scene scene = new Scene(seatSelectionScreen.getView(), 1100, 750);
-        stage.setScene(scene);
-    }
-
-    private void navigateToConfirmation() {
-        BookingConfirmationScreen confirmationScreen = new BookingConfirmationScreen(stage, navigationContext);
-        Scene scene = new Scene(confirmationScreen.getView(), 1100, 750);
-        stage.setScene(scene);
-    }
-
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

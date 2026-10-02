@@ -116,6 +116,11 @@ gradle-wrapper.properties
 *.db
 *.sqlite
 *.sqlite3
+*.mv.db
+*.trace.db
+
+# H2 database runtime files (generated at runtime, not to be committed)
+data/
 
 # Misc
 .cache/

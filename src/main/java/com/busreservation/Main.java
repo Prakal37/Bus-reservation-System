@@ -14,15 +14,13 @@ public class Main extends Application {
         NavigationContext navigationContext = new NavigationContext(stage);
         LoginScreen loginScreen = new LoginScreen(stage, navigationContext);
 
-        Scene scene = new Scene(
-                loginScreen.getView(),
-                1100,
-                750
-        );
+        Scene scene = navigationContext.buildScene(loginScreen.getView());
 
-        stage.setTitle("Bus Reservation System");
+        stage.setTitle("BusGo Travel");
         stage.setScene(scene);
-        stage.setResizable(false);
+        stage.setResizable(true);
+        stage.setMinWidth(980);
+        stage.setMinHeight(720);
         stage.show();
     }
 

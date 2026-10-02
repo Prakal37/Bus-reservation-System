@@ -3,7 +3,6 @@ package com.busreservation.ui;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -14,8 +13,8 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class BookingConfirmationScreen {
-    private Stage stage;
-    private NavigationContext navigationContext;
+    private final Stage stage;
+    private final NavigationContext navigationContext;
 
     public BookingConfirmationScreen(Stage stage, NavigationContext navigationContext) {
         this.stage = stage;
@@ -24,265 +23,137 @@ public class BookingConfirmationScreen {
 
     public Parent getView() {
         VBox root = new VBox(0);
-        root.setStyle("-fx-background-color: #f8f9fa;");
+        root.setStyle("-fx-background-color: #f4f7fb;");
 
-        // Header
-        VBox headerBox = new VBox(5);
-        headerBox.setStyle("-fx-background-color: #27ae60;");
-        headerBox.setPadding(new Insets(20));
+        VBox headerBox = new VBox(10);
+        headerBox.setStyle("-fx-background-color: linear-gradient(to right, #16a34a, #22c55e);");
+        headerBox.setPadding(new Insets(18, 26, 18, 26));
         headerBox.setAlignment(Pos.CENTER);
 
         Label successLabel = new Label("✓ BOOKING CONFIRMED");
         successLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         successLabel.setStyle("-fx-text-fill: white;");
-
         headerBox.getChildren().add(successLabel);
 
-        // Main content area
-        VBox contentBox = new VBox(30);
-        contentBox.setPadding(new Insets(40, 80, 40, 80));
-        contentBox.setStyle("-fx-background-color: #f8f9fa;");
+        VBox contentBox = new VBox(20);
+        contentBox.setPadding(new Insets(28));
         contentBox.setAlignment(Pos.TOP_CENTER);
 
-        // Get booking data
         NavigationContext.BookingConfirmation confirmation = navigationContext.getBookingConfirmation();
-        NavigationContext.Bus bus = confirmation.bus;
-        NavigationContext.PassengerInfo passenger = confirmation.passengerInfo;
+        if (confirmation == null || confirmation.bus == null || confirmation.passengerInfo == null) {
+            VBox fallback = new VBox(12);
+            fallback.getStyleClass().add("card");
+            fallback.setPadding(new Insets(26));
+            fallback.setMaxWidth(500);
+            Label message = new Label("Booking information is unavailable. Please return to the dashboard.");
+            message.setWrapText(true);
+            message.setStyle("-fx-text-fill: #334155; -fx-font-size: 13px;");
+            Button dashboardButton = new Button("Back to Dashboard");
+            dashboardButton.getStyleClass().add("secondary-button");
+            dashboardButton.setOnAction(e -> navigationContext.showScene(new DashboardScreen(stage, navigationContext).getView()));
+            fallback.getChildren().addAll(message, dashboardButton);
+            contentBox.getChildren().add(fallback);
+            root.getChildren().addAll(headerBox, contentBox);
+            return root;
+        }
 
-        // Ticket card
         VBox ticketCard = new VBox(0);
-        ticketCard.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-width: 1; -fx-border-radius: 8;");
-        ticketCard.setMaxWidth(700);
+        ticketCard.getStyleClass().add("card");
+        ticketCard.setMaxWidth(760);
 
-        // Confirmation number section
         VBox confNumSection = new VBox(8);
-        confNumSection.setPadding(new Insets(30));
-        confNumSection.setStyle("-fx-border-color: #ddd; -fx-border-width: 0 0 2 0;");
+        confNumSection.setPadding(new Insets(24));
         confNumSection.setAlignment(Pos.CENTER);
+        confNumSection.setStyle("-fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0;");
+        Label confLabel = new Label("Confirmation ID");
+        confLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px;");
+        Label confValue = new Label(confirmation.confirmationNumber);
+        confValue.setFont(Font.font("Courier New", FontWeight.BOLD, 22));
+        confValue.setStyle("-fx-text-fill: #0d47a1;");
+        confNumSection.getChildren().addAll(confLabel, confValue);
 
-        Label confNumLabel = new Label("Confirmation ID:");
-        confNumLabel.setFont(Font.font("Segoe UI", 11));
-        confNumLabel.setStyle("-fx-text-fill: #666;");
+        VBox routeSection = new VBox(18);
+        routeSection.setPadding(new Insets(24));
+        routeSection.setStyle("-fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0;");
+        HBox routeBox = new HBox(30);
+        routeBox.setAlignment(Pos.CENTER_LEFT);
+        VBox fromBox = new VBox(6);
+        Label fromTime = new Label(confirmation.bus.departureTime);
+        fromTime.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        Label fromCity = new Label(confirmation.bus.departureCity);
+        fromCity.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+        fromBox.getChildren().addAll(fromTime, fromCity);
 
-        Label confNumValue = new Label(confirmation.confirmationNumber);
-        confNumValue.setFont(Font.font("Courier New", FontWeight.BOLD, 20));
-        confNumValue.setStyle("-fx-text-fill: #003d82;");
+        Label arrow = new Label("→");
+        arrow.setStyle("-fx-font-size: 24px; -fx-text-fill: #94a3b8;");
 
-        confNumSection.getChildren().addAll(confNumLabel, confNumValue);
+        VBox toBox = new VBox(6);
+        Label toTime = new Label(confirmation.bus.arrivalTime);
+        toTime.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        Label toCity = new Label(confirmation.bus.destinationCity);
+        toCity.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+        toBox.getChildren().addAll(toTime, toCity);
+        routeBox.getChildren().addAll(fromBox, arrow, toBox);
 
-        // Journey details section
-        VBox journeySection = new VBox(20);
-        journeySection.setPadding(new Insets(30));
-        journeySection.setStyle("-fx-border-color: #ddd; -fx-border-width: 0 0 2 0;");
-
-        HBox routeBox = new HBox(40);
-        routeBox.setAlignment(Pos.CENTER);
-
-        VBox fromBox = new VBox(5);
-        Label fromTimeLabel = new Label(bus.departureTime);
-        fromTimeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        fromTimeLabel.setStyle("-fx-text-fill: #333;");
-        Label fromCityLabel = new Label(bus.departureCity);
-        fromCityLabel.setFont(Font.font("Segoe UI", 14));
-        fromCityLabel.setStyle("-fx-text-fill: #666;");
-        fromBox.getChildren().addAll(fromTimeLabel, fromCityLabel);
-
-        Label arrowLabel = new Label("→");
-        arrowLabel.setFont(Font.font("Segoe UI", 24));
-        arrowLabel.setStyle("-fx-text-fill: #ccc;");
-
-        VBox toBox = new VBox(5);
-        Label toTimeLabel = new Label(bus.arrivalTime);
-        toTimeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        toTimeLabel.setStyle("-fx-text-fill: #333;");
-        Label toCityLabel = new Label(bus.destinationCity);
-        toCityLabel.setFont(Font.font("Segoe UI", 14));
-        toCityLabel.setStyle("-fx-text-fill: #666;");
-        toBox.getChildren().addAll(toTimeLabel, toCityLabel);
-
-        routeBox.getChildren().addAll(fromBox, arrowLabel, toBox);
-
-        // Bus details in a grid
-        HBox busDetailsBox = new HBox(60);
-        busDetailsBox.setAlignment(Pos.CENTER);
-        busDetailsBox.setPadding(new Insets(20, 0, 0, 0));
-
-        VBox operatorBox = new VBox(3);
-        Label operatorTitleLabel = new Label("Bus Operator");
-        operatorTitleLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label operatorValueLabel = new Label(bus.busOperator);
-        operatorValueLabel.setFont(Font.font("Segoe UI", 12));
-        operatorValueLabel.setStyle("-fx-text-fill: #333;");
-        operatorBox.getChildren().addAll(operatorTitleLabel, operatorValueLabel);
-
-        VBox typeBox = new VBox(3);
-        Label typeTitleLabel = new Label("Bus Type");
-        typeTitleLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label typeValueLabel = new Label(bus.busType);
-        typeValueLabel.setFont(Font.font("Segoe UI", 12));
-        typeValueLabel.setStyle("-fx-text-fill: #333;");
-        typeBox.getChildren().addAll(typeTitleLabel, typeValueLabel);
-
-        VBox durationBox = new VBox(3);
-        Label durationTitleLabel = new Label("Duration");
-        durationTitleLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label durationValueLabel = new Label(bus.duration);
-        durationValueLabel.setFont(Font.font("Segoe UI", 12));
-        durationValueLabel.setStyle("-fx-text-fill: #333;");
-        durationBox.getChildren().addAll(durationTitleLabel, durationValueLabel);
-
-        busDetailsBox.getChildren().addAll(operatorBox, typeBox, durationBox);
-
-        journeySection.getChildren().addAll(routeBox, busDetailsBox);
-
-        // Passenger and seats section
-        VBox passengerSection = new VBox(15);
-        passengerSection.setPadding(new Insets(30));
-        passengerSection.setStyle("-fx-border-color: #ddd; -fx-border-width: 0 0 2 0;");
-
-        HBox passengerDetailsBox = new HBox(80);
-        passengerDetailsBox.setAlignment(Pos.CENTER_LEFT);
-
-        VBox passengerNameBox = new VBox(3);
-        Label passengerNameTitle = new Label("Passenger Name");
-        passengerNameTitle.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label passengerNameValue = new Label(passenger.passengerName);
-        passengerNameValue.setFont(Font.font("Segoe UI", 13));
-        passengerNameValue.setStyle("-fx-text-fill: #333;");
-        passengerNameBox.getChildren().addAll(passengerNameTitle, passengerNameValue);
-
-        VBox passengerAgeBox = new VBox(3);
-        Label passengerAgeTitle = new Label("Age");
-        passengerAgeTitle.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label passengerAgeValue = new Label(String.valueOf(passenger.age));
-        passengerAgeValue.setFont(Font.font("Segoe UI", 13));
-        passengerAgeValue.setStyle("-fx-text-fill: #333;");
-        passengerAgeBox.getChildren().addAll(passengerAgeTitle, passengerAgeValue);
-
-        VBox passengerGenderBox = new VBox(3);
-        Label passengerGenderTitle = new Label("Gender");
-        passengerGenderTitle.setStyle("-fx-text-fill: #999; -fx-font-size: 10;");
-        Label passengerGenderValue = new Label(passenger.gender);
-        passengerGenderValue.setFont(Font.font("Segoe UI", 13));
-        passengerGenderValue.setStyle("-fx-text-fill: #333;");
-        passengerGenderBox.getChildren().addAll(passengerGenderTitle, passengerGenderValue);
-
-        passengerDetailsBox.getChildren().addAll(passengerNameBox, passengerAgeBox, passengerGenderBox);
-
-        VBox seatsBox = new VBox(10);
-        Label seatsTitle = new Label("SEATS RESERVED");
-        seatsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        seatsTitle.setStyle("-fx-text-fill: #003d82;");
-
-        Label seatsValue = new Label(seatsToString(confirmation.seats));
-        seatsValue.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
-        seatsValue.setStyle("-fx-text-fill: #27ae60;");
-
-        seatsBox.getChildren().addAll(seatsTitle, seatsValue);
-
-        passengerSection.getChildren().addAll(passengerDetailsBox, seatsBox);
-
-        // Price section
-        VBox priceSection = new VBox(10);
-        priceSection.setPadding(new Insets(30));
-        priceSection.setAlignment(Pos.CENTER_RIGHT);
-
-        Label priceTitle = new Label("TOTAL FARE");
-        priceTitle.setStyle("-fx-text-fill: #999; -fx-font-size: 11; -fx-font-weight: bold;");
-
-        Label priceValue = new Label("₹" + (int)confirmation.totalPrice);
-        priceValue.setFont(Font.font("Segoe UI", FontWeight.BOLD, 32));
-        priceValue.setStyle("-fx-text-fill: #27ae60;");
-
-        priceSection.getChildren().addAll(priceTitle, priceValue);
-
-        // Add all sections to ticket card
-        ticketCard.getChildren().addAll(confNumSection, journeySection, passengerSection, priceSection);
-
-        // Action buttons
-        HBox buttonBox = new HBox(15);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setPadding(new Insets(30, 0, 0, 0));
-
-        Button downloadButton = new Button("DOWNLOAD TICKET");
-        downloadButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #0066cc; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
+        HBox detailRow = new HBox(32);
+        detailRow.setPadding(new Insets(12, 0, 0, 0));
+        detailRow.getChildren().addAll(
+                createMiniInfo("Bus Operator", confirmation.bus.busOperator),
+                createMiniInfo("Bus Type", confirmation.bus.busType),
+                createMiniInfo("Duration", confirmation.bus.duration)
         );
-        downloadButton.setOnMouseEntered(e -> downloadButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #0052a3; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        downloadButton.setOnMouseExited(e -> downloadButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #0066cc; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
+        routeSection.getChildren().addAll(routeBox, detailRow);
 
-        Button myBookingsButton = new Button("MY BOOKINGS");
-        myBookingsButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #ff9800; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
+        VBox passengerSection = new VBox(18);
+        passengerSection.setPadding(new Insets(24));
+        passengerSection.setStyle("-fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0;");
+        HBox passengerRow = new HBox(30);
+        passengerRow.getChildren().addAll(
+                createMiniInfo("Passenger", confirmation.passengerInfo.passengerName),
+                createMiniInfo("Age", String.valueOf(confirmation.passengerInfo.age)),
+                createMiniInfo("Gender", confirmation.passengerInfo.gender)
         );
-        myBookingsButton.setOnMouseEntered(e -> myBookingsButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #f57c00; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        myBookingsButton.setOnMouseExited(e -> myBookingsButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #ff9800; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        myBookingsButton.setOnAction(e -> navigateToMyBookings());
+        Label seatLabel = new Label("Seats: " + String.join(", ", confirmation.seats));
+        seatLabel.setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold; -fx-font-size: 13px;");
+        passengerSection.getChildren().addAll(passengerRow, seatLabel);
 
-        Button dashboardButton = new Button("BACK TO DASHBOARD");
-        dashboardButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #95a5a6; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        dashboardButton.setOnMouseEntered(e -> dashboardButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #7f8c8d; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        dashboardButton.setOnMouseExited(e -> dashboardButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 35 12 35; " +
-                "-fx-background-color: #95a5a6; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        dashboardButton.setOnAction(e -> navigateToDashboard());
+        VBox priceSection = new VBox(8);
+        priceSection.setPadding(new Insets(24));
+        Label totalLabel = new Label("TOTAL FARE");
+        totalLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px; -fx-font-weight: bold;");
+        Label totalValue = new Label("₹" + (int) confirmation.totalPrice);
+        totalValue.setStyle("-fx-text-fill: #16a34a; -fx-font-size: 28px; -fx-font-weight: bold;");
+        priceSection.getChildren().addAll(totalLabel, totalValue);
 
-        buttonBox.getChildren().addAll(downloadButton, myBookingsButton, dashboardButton);
+        ticketCard.getChildren().addAll(confNumSection, routeSection, passengerSection, priceSection);
 
-        contentBox.getChildren().addAll(ticketCard, buttonBox);
+        HBox actionRow = new HBox(14);
+        actionRow.setAlignment(Pos.CENTER);
+        Button myBookingsButton = new Button("View My Bookings");
+        myBookingsButton.getStyleClass().add("secondary-button");
+        myBookingsButton.setOnAction(e -> navigationContext.showScene(new MyBookingsScreen(stage, navigationContext).getView()));
 
+        Button dashboardButton = new Button("Back to Dashboard");
+        dashboardButton.getStyleClass().add("ghost-button");
+        dashboardButton.setOnAction(e -> navigationContext.showScene(new DashboardScreen(stage, navigationContext).getView()));
+
+        Button newBookingButton = new Button("New Booking");
+        newBookingButton.getStyleClass().add("primary-button");
+        newBookingButton.setOnAction(e -> navigationContext.showScene(new SearchBusScreen(stage, navigationContext).getView()));
+
+        actionRow.getChildren().addAll(myBookingsButton, dashboardButton, newBookingButton);
+        contentBox.getChildren().addAll(ticketCard, actionRow);
         root.getChildren().addAll(headerBox, contentBox);
         return root;
     }
 
-    private String seatsToString(String[] seats) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < seats.length; i++) {
-            sb.append(seats[i]);
-            if (i < seats.length - 1) sb.append(", ");
-        }
-        return sb.toString();
-    }
-
-    private void navigateToMyBookings() {
-        MyBookingsScreen myBookingsScreen = new MyBookingsScreen(stage, navigationContext);
-        Scene scene = new Scene(myBookingsScreen.getView(), 1100, 750);
-        stage.setScene(scene);
-    }
-
-    private void navigateToDashboard() {
-        DashboardScreen dashboardScreen = new DashboardScreen(stage, navigationContext);
-        Scene scene = new Scene(dashboardScreen.getView(), 1100, 750);
-        stage.setScene(scene);
+    private VBox createMiniInfo(String title, String value) {
+        VBox box = new VBox(3);
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 10px;");
+        Label valueLabel = new Label(value);
+        valueLabel.setStyle("-fx-text-fill: #0f172a; -fx-font-size: 12px; -fx-font-weight: bold;");
+        box.getChildren().addAll(titleLabel, valueLabel);
+        return box;
     }
 }

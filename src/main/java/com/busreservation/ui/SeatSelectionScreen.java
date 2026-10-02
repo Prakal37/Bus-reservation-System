@@ -1,182 +1,199 @@
 package com.busreservation.ui;
 
+import com.busreservation.dto.SeatDTO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.layout.Region;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class SeatSelectionScreen {
-    private Stage stage;
-    private NavigationContext navigationContext;
-    private Set<String> selectedSeats = new HashSet<>();
-    private Button[][] seatButtons;
+    private final Stage stage;
+    private final NavigationContext navigationContext;
+    private final Set<String> selectedSeats = new HashSet<>();
+    private final Set<Integer> occupiedSeatNumbers = new HashSet<>();
 
     public SeatSelectionScreen(Stage stage, NavigationContext navigationContext) {
         this.stage = stage;
         this.navigationContext = navigationContext;
+        if (navigationContext.getSelectedSeats() != null) {
+            selectedSeats.addAll(Arrays.asList(navigationContext.getSelectedSeats()));
+        }
     }
 
     public Parent getView() {
         VBox root = new VBox(0);
-        root.setStyle("-fx-background-color: #f8f9fa;");
+        root.setStyle("-fx-background-color: #f4f7fb;");
 
-        // Header
         VBox headerBox = new VBox(5);
-        headerBox.setStyle("-fx-background-color: #003d82;");
-        headerBox.setPadding(new Insets(20));
-        headerBox.setAlignment(Pos.CENTER_LEFT);
+        headerBox.getStyleClass().add("app-header");
+        headerBox.setPadding(new Insets(18, 26, 18, 26));
 
         NavigationContext.Bus bus = navigationContext.getSelectedBus();
-        Label headerTitle = new Label("Select Your Seats");
-        headerTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 26));
-        headerTitle.setStyle("-fx-text-fill: white;");
+        NavigationContext.SearchQuery query = navigationContext.getSearchQuery();
+        String journeyDate = query != null ? query.date : "2026-10-01";
 
-        Label headerSubtitle = new Label(bus.busOperator + " - " + bus.departureCity + " → " + bus.destinationCity);
-        headerSubtitle.setStyle("-fx-text-fill: #ccc; -fx-font-size: 12;");
+        Label title = new Label("Select Your Seats");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
+        title.setStyle("-fx-text-fill: white;");
 
-        headerBox.getChildren().addAll(headerTitle, headerSubtitle);
+        String departureCity = bus != null ? bus.departureCity : "Origin";
+        String destinationCity = bus != null ? bus.destinationCity : "Destination";
+        String busOperator = bus != null ? bus.busOperator : "Bus";
+        Label subtitle = new Label(busOperator + " • " + departureCity + " → " + destinationCity + " • " + journeyDate);
+        subtitle.setStyle("-fx-text-fill: rgba(255,255,255,0.82); -fx-font-size: 12px;");
+        headerBox.getChildren().addAll(title, subtitle);
 
-        // Main content
-        VBox contentBox = new VBox(20);
-        contentBox.setStyle("-fx-background-color: #f8f9fa;");
+        occupiedSeatNumbers.clear();
+        fetchOccupiedSeats(bus, journeyDate);
+
+        VBox contentBox = new VBox(18);
         contentBox.setPadding(new Insets(30));
         contentBox.setAlignment(Pos.TOP_CENTER);
 
-        // Seat selection instructions
-        Label instructionLabel = new Label("Click on seats to select them (Max: " + bus.availableSeats + " seats)");
-        instructionLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #7f8c8d;");
+        int totalSeats = bus != null ? bus.totalSeats : 40;
+        int availableCount = totalSeats - occupiedSeatNumbers.size();
+        Label instructionLabel = new Label("Select your seats — " + availableCount + " of " + totalSeats + " seats available");
+        instructionLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 12px;");
 
-        // Seat grid
         GridPane seatGrid = new GridPane();
         seatGrid.setHgap(10);
         seatGrid.setVgap(10);
         seatGrid.setAlignment(Pos.CENTER);
-        seatGrid.setStyle("-fx-padding: 20;");
+        seatGrid.setPadding(new Insets(18));
 
-        seatButtons = new Button[4][10];
         char[] rows = {'A', 'B', 'C', 'D'};
-
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 10; col++) {
                 String seatName = String.valueOf(rows[row]) + (col + 1);
+                int seatNumber = row * 10 + (col + 1);
                 Button seatButton = new Button(seatName);
-                seatButton.setPrefSize(45, 45);
-                seatButton.setStyle("-fx-font-size: 10; -fx-font-weight: bold; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-border-radius: 4; -fx-background-radius: 4;");
-
-                seatButtons[row][col] = seatButton;
-                final String seat = seatName;
-
-                seatButton.setOnAction(e -> toggleSeat(seat, seatButton));
-
+                seatButton.setPrefSize(52, 40);
+                if (occupiedSeatNumbers.contains(seatNumber)) {
+                    seatButton.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-border-radius: 10px;");
+                    seatButton.setDisable(true);
+                } else {
+                    seatButton.setStyle("-fx-background-color: #cbd5e1; -fx-text-fill: #0f172a; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-border-radius: 10px;");
+                    if (selectedSeats.contains(seatName)) {
+                        seatButton.setStyle("-fx-background-color: #22c55e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-border-radius: 10px;");
+                    }
+                }
                 seatGrid.add(seatButton, col, row);
             }
         }
 
-        // Legend
-        HBox legendBox = new HBox(20);
+        HBox legendBox = new HBox(18);
         legendBox.setAlignment(Pos.CENTER);
-        legendBox.setPadding(new Insets(15, 0, 15, 0));
-
-        Button availableDemo = new Button();
-        availableDemo.setPrefSize(30, 30);
-        availableDemo.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-disabled: true;");
-        availableDemo.setDisable(true);
-        Label availableLabel = new Label("Available");
-
-        Button selectedDemo = new Button();
-        selectedDemo.setPrefSize(30, 30);
-        selectedDemo.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-disabled: true;");
-        selectedDemo.setDisable(true);
-        Label selectedLabel = new Label("Selected");
-
+        legendBox.setPadding(new Insets(8, 0, 8, 0));
         legendBox.getChildren().addAll(
-                availableDemo, availableLabel,
-                new Separator(),
-                selectedDemo, selectedLabel
+                makeLegendItem("Available", "#cbd5e1"),
+                makeLegendItem("Selected", "#22c55e"),
+                makeLegendItem("Occupied", "#ef4444")
         );
 
-        // Continue button
-        Button continueButton = new Button("Continue");
-        continueButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #27ae60; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        continueButton.setOnMouseEntered(e -> continueButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #229954; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        continueButton.setOnMouseExited(e -> continueButton.setStyle(
-                "-fx-font-size: 12; -fx-padding: 10 40 10 40; " +
-                "-fx-background-color: #27ae60; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
+        Label selectedSummaryLabel = new Label(selectedSeats.isEmpty() ? "No seats selected" : "Selected: " + String.join(", ", selectedSeats.stream().sorted().toList()));
+        selectedSummaryLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0d47a1;");
+
+        Button backButton = new Button("← Back to Bus Results");
+        backButton.getStyleClass().add("ghost-button");
+        backButton.setOnAction(e -> navigationContext.showScene(new BusResultsScreen(stage, navigationContext).getView()));
+
+        Button continueButton = new Button("Continue to Passenger Details");
+        continueButton.getStyleClass().add("primary-button");
         continueButton.setOnAction(e -> {
             if (selectedSeats.isEmpty()) {
-                showAlert("Error", "Please select at least one seat");
+                showAlert("Seat selection", "Please select at least one seat before continuing.");
                 return;
             }
-            String[] seatsArray = selectedSeats.toArray(new String[0]);
-            navigationContext.setSelectedSeats(seatsArray);
-            navigateToPassengerDetails();
+            navigationContext.setSelectedSeats(selectedSeats.toArray(new String[0]));
+            navigationContext.showScene(new PassengerDetailsScreen(stage, navigationContext).getView());
         });
 
-        HBox buttonBox = new HBox();
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().add(continueButton);
+        HBox actionBar = new HBox(14);
+        actionBar.setAlignment(Pos.CENTER);
+        actionBar.getChildren().addAll(backButton, continueButton);
 
-        contentBox.getChildren().addAll(
-                instructionLabel,
-                new Separator(),
-                seatGrid,
-                legendBox,
-                new Separator(),
-                buttonBox
-        );
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 10; col++) {
+                final int currentRow = row;
+                final int currentCol = col;
+                Button seatButton = (Button) seatGrid.getChildren().stream()
+                        .filter(node -> GridPane.getRowIndex(node) == currentRow && GridPane.getColumnIndex(node) == currentCol)
+                        .findFirst()
+                        .orElse(null);
+                if (seatButton == null || seatButton.isDisabled()) {
+                    continue;
+                }
+                final String seatName = seatButton.getText();
+                final Button selectedSeatButton = seatButton;
+                final Label selectedSummary = selectedSummaryLabel;
+                selectedSeatButton.setOnAction(e -> toggleSeat(seatName, selectedSeatButton, selectedSummary));
+            }
+        }
 
+        contentBox.getChildren().addAll(backButton, instructionLabel, new Separator(), seatGrid, legendBox, selectedSummaryLabel, actionBar);
         root.getChildren().addAll(headerBox, contentBox);
         return root;
     }
 
-    private void toggleSeat(String seatName, Button seatButton) {
-        NavigationContext.Bus bus = navigationContext.getSelectedBus();
+    private HBox makeLegendItem(String labelText, String color) {
+        HBox box = new HBox(8);
+        box.setAlignment(Pos.CENTER_LEFT);
+        Button swatch = new Button();
+        swatch.setPrefSize(20, 18);
+        swatch.setDisable(true);
+        swatch.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 5px; -fx-border-radius: 5px;");
+        Label label = new Label(labelText);
+        label.setStyle("-fx-text-fill: #334155; -fx-font-size: 11px;");
+        box.getChildren().addAll(swatch, label);
+        return box;
+    }
+
+    private void toggleSeat(String seatName, Button seatButton, Label summaryLabel) {
         if (selectedSeats.contains(seatName)) {
             selectedSeats.remove(seatName);
-            seatButton.setStyle("-fx-font-size: 10; -fx-font-weight: bold; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-border-radius: 4; -fx-background-radius: 4;");
+            seatButton.setStyle("-fx-background-color: #cbd5e1; -fx-text-fill: #0f172a; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-border-radius: 10px;");
         } else {
-            if (selectedSeats.size() < bus.availableSeats) {
-                selectedSeats.add(seatName);
-                seatButton.setStyle("-fx-font-size: 10; -fx-font-weight: bold; -fx-background-color: #27ae60; -fx-text-fill: white; -fx-border-radius: 4; -fx-background-radius: 4;");
-            } else {
-                showAlert("Error", "You can select maximum " + bus.availableSeats + " seats");
-            }
+            selectedSeats.add(seatName);
+            seatButton.setStyle("-fx-background-color: #22c55e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-border-radius: 10px;");
         }
+        summaryLabel.setText(selectedSeats.isEmpty() ? "No seats selected" : "Selected: " + String.join(", ", selectedSeats.stream().sorted().toList()));
     }
 
-    private void navigateToBusResults() {
-        BusResultsScreen busResultsScreen = new BusResultsScreen(stage, navigationContext);
-        Scene scene = new Scene(busResultsScreen.getView(), 1100, 750);
-        stage.setScene(scene);
-    }
-
-    private void navigateToPassengerDetails() {
-        PassengerDetailsScreen passengerDetailsScreen = new PassengerDetailsScreen(stage, navigationContext);
-        Scene scene = new Scene(passengerDetailsScreen.getView(), 1100, 750);
-        stage.setScene(scene);
+    private void fetchOccupiedSeats(NavigationContext.Bus bus, String journeyDate) {
+        if (bus == null) {
+            return;
+        }
+        try {
+            Long busId = (long) bus.busId;
+            List<SeatDTO> availableSeats = navigationContext.getApiClient().getAvailableSeats(busId, journeyDate);
+            Set<Integer> availableSeatNumbers = new HashSet<>();
+            for (SeatDTO seat : availableSeats) {
+                if (seat.getSeatNumber() != null) {
+                    availableSeatNumbers.add(seat.getSeatNumber());
+                }
+            }
+            int total = bus.totalSeats > 0 ? bus.totalSeats : 40;
+            for (int i = 1; i <= total; i++) {
+                if (!availableSeatNumbers.contains(i)) {
+                    occupiedSeatNumbers.add(i);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not fetch seat availability from backend: " + e.getMessage());
+        }
     }
 
     private void showAlert(String title, String message) {

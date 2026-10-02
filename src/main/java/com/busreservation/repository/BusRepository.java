@@ -30,6 +30,6 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
     @Query("SELECT b FROM Bus b WHERE b.route.routeId = :routeId AND b.isActive = true")
     List<Bus> findActiveByRouteId(@Param("routeId") Long routeId);
     
-    @Query("SELECT b FROM Bus b WHERE b.route.source = :source AND b.route.destination = :destination AND b.isActive = true")
+    @Query("SELECT b FROM Bus b WHERE LOWER(b.route.source) = LOWER(:source) AND LOWER(b.route.destination) = LOWER(:destination) AND b.isActive = true")
     List<Bus> findBySourceAndDestination(@Param("source") String source, @Param("destination") String destination);
 }

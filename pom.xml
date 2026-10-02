@@ -79,6 +79,17 @@
             <artifactId>modelmapper</artifactId>
             <version>3.1.1</version>
         </dependency>
+        <!-- Jackson Java 8 Date/Time (java.time / LocalDateTime) support.
+             Required by the JavaFX REST client's ObjectMapper to read the
+             backend's ApiResponse.timestamp / createdAt / bookedAt fields.
+             Version is managed by spring-boot-starter-parent so it always
+             matches the jackson-databind version from spring-boot-starter-web. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+
 
         <!-- JWT API -->
         <dependency>

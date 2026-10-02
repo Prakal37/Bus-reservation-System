@@ -58,9 +58,10 @@ public class SeatService {
     /**
      * Get available seats for a bus on a specific date
      */
-    public List<SeatDTO> getAvailableSeatsForBusAndDate(Long busId, String journeyDate) {
-        log.info("Fetching available seats for bus {} on date {}", busId, journeyDate);
-        List<Seat> availableSeats = seatRepository.findAvailableSeatsByBusAndDate(busId, journeyDate);
+    public List<SeatDTO> getAvailableSeatsForBusAndDate(Bus bus, String journeyDate) {
+        log.info("Fetching available seats for bus {} on date {}", bus.getBusId(), journeyDate);
+        initializeSeatsForBusAndDate(bus, journeyDate);
+        List<Seat> availableSeats = seatRepository.findAvailableSeatsByBusAndDate(bus.getBusId(), journeyDate);
         return availableSeats.stream()
                 .map(seat -> modelMapper.map(seat, SeatDTO.class))
                 .collect(Collectors.toList());
@@ -99,10 +100,10 @@ public class SeatService {
         log.info("Checking availability of seats for bus {} on date {}", bus.getBusId(), journeyDate);
         
         for (Integer seatNumber : seatNumbers) {
-            Seat seat = seatRepository.findByBusAndSeatNumber(bus, seatNumber)
+            Seat seat = seatRepository.findByBusAndSeatNumberAndBookingDate(bus, seatNumber, journeyDate)
                     .orElse(null);
-            
-            if (seat == null || !seat.getIsAvailable() || !journeyDate.equals(seat.getBookingDate())) {
+
+            if (seat == null || !Boolean.TRUE.equals(seat.getIsAvailable())) {
                 return false;
             }
         }
@@ -118,7 +119,7 @@ public class SeatService {
         log.info("Marking seats as booked for bus {} on date {}", bus.getBusId(), journeyDate);
 
         for (Integer seatNumber : seatNumbers) {
-            Seat seat = seatRepository.findByBusAndSeatNumber(bus, seatNumber)
+            Seat seat = seatRepository.findByBusAndSeatNumberAndBookingDate(bus, seatNumber, journeyDate)
                     .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatNumber));
 
             seat.setIsAvailable(false);
@@ -136,7 +137,7 @@ public class SeatService {
         log.info("Marking seats as available for bus {} on date {}", bus.getBusId(), journeyDate);
 
         for (Integer seatNumber : seatNumbers) {
-            Seat seat = seatRepository.findByBusAndSeatNumber(bus, seatNumber)
+            Seat seat = seatRepository.findByBusAndSeatNumberAndBookingDate(bus, seatNumber, journeyDate)
                     .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatNumber));
 
             seat.setIsAvailable(true);

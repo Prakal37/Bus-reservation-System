@@ -42,10 +42,9 @@ public class SeatController {
                         .body(new ApiResponse<>(false, "Journey date is required", null));
             }
 
-            // Ensure bus exists
-            busService.getBusById(busId, journeyDate);
+            var bus = busService.getBusEntityById(busId);
 
-            List<SeatDTO> seats = seatService.getAvailableSeatsForBusAndDate(busId, journeyDate);
+            List<SeatDTO> seats = seatService.getAvailableSeatsForBusAndDate(bus, journeyDate);
             return ResponseEntity.ok(new ApiResponse<>(true, "Available seats retrieved successfully", seats));
 
         } catch (IllegalArgumentException e) {

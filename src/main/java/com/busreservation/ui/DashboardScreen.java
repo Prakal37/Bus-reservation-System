@@ -3,8 +3,12 @@ package com.busreservation.ui;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -14,8 +18,8 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class DashboardScreen {
-    private Stage stage;
-    private NavigationContext navigationContext;
+    private final Stage stage;
+    private final NavigationContext navigationContext;
 
     public DashboardScreen(Stage stage, NavigationContext navigationContext) {
         this.stage = stage;
@@ -24,267 +28,235 @@ public class DashboardScreen {
 
     public Parent getView() {
         VBox root = new VBox(0);
-        root.setStyle("-fx-background-color: #f8f9fa;");
+        root.setStyle("-fx-background-color: #f4f7fb;");
 
-        // Header
         VBox headerBox = new VBox(10);
-        headerBox.setStyle("-fx-background-color: #003d82;");
-        headerBox.setPadding(new Insets(30, 40, 30, 40));
+        headerBox.getStyleClass().add("app-header");
+        headerBox.setPadding(new Insets(18, 28, 18, 28));
 
-        HBox topHeaderBox = new HBox();
+        HBox topHeaderBox = new HBox(18);
         topHeaderBox.setAlignment(Pos.CENTER_LEFT);
 
-        Label welcomeLabel = new Label("Welcome, " + navigationContext.getLoggedInUser());
-        welcomeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
-        welcomeLabel.setStyle("-fx-text-fill: white;");
+        Label brandLabel = new Label("BusGo");
+        brandLabel.getStyleClass().add("brand-text");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        HBox navBox = new HBox(10);
+        navBox.setAlignment(Pos.CENTER_RIGHT);
+        Button homeButton = new Button("Home");
+        Button searchNavButton = new Button("Search Buses");
+        Button bookingsNavButton = new Button("My Bookings");
+        Button trackNavButton = new Button("Track Bus");
+        for (Button button : new Button[]{homeButton, searchNavButton, bookingsNavButton, trackNavButton}) {
+            button.getStyleClass().add("ghost-button");
+        }
+        homeButton.setOnAction(e -> navigationContext.showScene(getView()));
+        searchNavButton.setOnAction(e -> navigationContext.showScene(new SearchBusScreen(stage, navigationContext).getView()));
+        bookingsNavButton.setOnAction(e -> navigationContext.showScene(new MyBookingsScreen(stage, navigationContext).getView()));
+        trackNavButton.setOnAction(e -> navigationContext.showScene(new TrackBusScreen(stage, navigationContext).getView()));
+        navBox.getChildren().addAll(homeButton, searchNavButton, bookingsNavButton, trackNavButton);
+
         Button logoutButton = new Button("Logout");
-        logoutButton.setStyle(
-                "-fx-font-size: 11; -fx-padding: 8 16 8 16; " +
-                "-fx-background-color: #e74c3c; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        logoutButton.setOnMouseEntered(e -> logoutButton.setStyle(
-                "-fx-font-size: 11; -fx-padding: 8 16 8 16; " +
-                "-fx-background-color: #c0392b; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        logoutButton.setOnMouseExited(e -> logoutButton.setStyle(
-                "-fx-font-size: 11; -fx-padding: 8 16 8 16; " +
-                "-fx-background-color: #e74c3c; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
+        logoutButton.getStyleClass().add("danger-button");
         logoutButton.setOnAction(e -> {
             navigationContext.logout();
-            LoginScreen loginScreen = new LoginScreen(stage, navigationContext);
-            Scene scene = new Scene(loginScreen.getView(), 1100, 750);
-            stage.setScene(scene);
+            navigationContext.showScene(new LoginScreen(stage, navigationContext).getView());
         });
 
-        topHeaderBox.getChildren().addAll(welcomeLabel, spacer, logoutButton);
+        Label welcomeLabel = new Label("Welcome, " + (navigationContext.getLoggedInUser() == null ? "traveller" : navigationContext.getLoggedInUser()));
+        welcomeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        welcomeLabel.setStyle("-fx-text-fill: white;");
 
-        Label taglineLabel = new Label("Book your journey across Tamil Nadu");
-        taglineLabel.setFont(Font.font("Segoe UI", 13));
-        taglineLabel.setStyle("-fx-text-fill: #ccc;");
+        topHeaderBox.getChildren().addAll(brandLabel, spacer, navBox, welcomeLabel, logoutButton);
+
+        Label taglineLabel = new Label("Travel anywhere in Tamil Nadu");
+        taglineLabel.getStyleClass().add("subtitle-text");
 
         headerBox.getChildren().addAll(topHeaderBox, taglineLabel);
 
-        // Main content area
-        VBox contentBox = new VBox(30);
-        contentBox.setStyle("-fx-background-color: #f8f9fa;");
-        contentBox.setPadding(new Insets(40));
+        VBox contentBox = new VBox(26);
+        contentBox.setPadding(new Insets(28, 28, 36, 28));
 
-        // Search card
-        VBox searchCard = new VBox(15);
-        searchCard.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8; -fx-background-radius: 8;");
-        searchCard.setPadding(new Insets(30));
-        searchCard.setMaxWidth(800);
+        VBox heroCard = new VBox(18);
+        heroCard.getStyleClass().add("card");
+        heroCard.setPadding(new Insets(24));
+        heroCard.setMaxWidth(980);
 
-        Label searchTitle = new Label("Quick Search");
-        searchTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
-        searchTitle.setStyle("-fx-text-fill: #003d82;");
+        Label heroTitle = new Label("Book buses quickly, securely and comfortably.");
+        heroTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 30));
+        heroTitle.setStyle("-fx-text-fill: #0f172a;");
 
-        // Search form
-        VBox formBox = new VBox(12);
+        HBox searchRow = new HBox(16);
+        searchRow.setAlignment(Pos.CENTER_LEFT);
+        searchRow.setPadding(new Insets(8, 0, 0, 0));
 
-        HBox citiesRow = new HBox(15);
-        citiesRow.setAlignment(Pos.CENTER_LEFT);
-
-        Label fromLabel = new Label("From:");
-        fromLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold;");
+        VBox fromBox = new VBox(6);
+        Label fromLabel = new Label("From");
+        fromLabel.getStyleClass().add("form-label");
         ComboBox<String> fromCombo = new ComboBox<>();
-        fromCombo.getItems().addAll(
-                "Chennai", "Madurai", "Coimbatore", "Tiruchirappalli", "Salem",
-                "Tirunelveli", "Thoothukudi", "Erode", "Vellore", "Thanjavur",
-                "Kanyakumari", "Dindigul", "Hosur", "Nagercoil", "Sivakasi"
-        );
+        fromCombo.getItems().addAll("Chennai", "Madurai", "Coimbatore", "Tiruchirappalli", "Salem", "Tirunelveli", "Thoothukudi", "Nagercoil", "Kanyakumari", "Erode", "Vellore");
         fromCombo.setValue("Chennai");
-        fromCombo.setMaxWidth(200);
-        fromCombo.setStyle("-fx-font-size: 12;");
+        fromCombo.getStyleClass().add("input-field");
+        fromCombo.setPrefWidth(180);
+        fromBox.getChildren().addAll(fromLabel, fromCombo);
 
-        Label toLabel = new Label("To:");
-        toLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold;");
+        VBox toBox = new VBox(6);
+        Label toLabel = new Label("To");
+        toLabel.getStyleClass().add("form-label");
         ComboBox<String> toCombo = new ComboBox<>();
-        toCombo.getItems().addAll(
-                "Chennai", "Madurai", "Coimbatore", "Tiruchirappalli", "Salem",
-                "Tirunelveli", "Thoothukudi", "Erode", "Vellore", "Thanjavur",
-                "Kanyakumari", "Dindigul", "Hosur", "Nagercoil", "Sivakasi"
-        );
+        toCombo.getItems().addAll("Chennai", "Madurai", "Coimbatore", "Tiruchirappalli", "Salem", "Tirunelveli", "Thoothukudi", "Nagercoil", "Kanyakumari", "Erode", "Vellore");
         toCombo.setValue("Madurai");
-        toCombo.setMaxWidth(200);
-        toCombo.setStyle("-fx-font-size: 12;");
+        toCombo.getStyleClass().add("input-field");
+        toCombo.setPrefWidth(180);
+        toBox.getChildren().addAll(toLabel, toCombo);
 
-        citiesRow.getChildren().addAll(fromLabel, fromCombo, toLabel, toCombo);
+        VBox dateBox = new VBox(6);
+        Label dateLabel = new Label("Travel Date");
+        dateLabel.getStyleClass().add("form-label");
+        DatePicker datePicker = new DatePicker(java.time.LocalDate.now());
+        datePicker.setPrefWidth(180);
+        datePicker.setStyle("-fx-background-color: white; -fx-padding: 0; -fx-border-radius: 10; -fx-background-radius: 10;");
+        dateBox.getChildren().addAll(dateLabel, datePicker);
 
-        HBox datePassengersRow = new HBox(15);
-        datePassengersRow.setAlignment(Pos.CENTER_LEFT);
-
-        Label dateLabel = new Label("Date:");
-        dateLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold;");
-        DatePicker datePicker = new DatePicker();
-        datePicker.setValue(java.time.LocalDate.now());
-        datePicker.setMaxWidth(200);
-        datePicker.setStyle("-fx-font-size: 12;");
-
-        Label passengersLabel = new Label("Passengers:");
-        passengersLabel.setStyle("-fx-font-size: 12; -fx-font-weight: bold;");
-        ComboBox<Integer> passengerCombo = new ComboBox<>();
-        for (int i = 1; i <= 6; i++) {
-            passengerCombo.getItems().add(i);
-        }
-        passengerCombo.setValue(1);
-        passengerCombo.setMaxWidth(100);
-        passengerCombo.setStyle("-fx-font-size: 12;");
-
-        datePassengersRow.getChildren().addAll(dateLabel, datePicker, passengersLabel, passengerCombo);
-
-        formBox.getChildren().addAll(citiesRow, datePassengersRow);
-
-        // Search button
-        Button searchButton = new Button("SEARCH BUSES");
-        searchButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 40 12 40; " +
-                "-fx-background-color: #ff9800; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        searchButton.setOnMouseEntered(e -> searchButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 40 12 40; " +
-                "-fx-background-color: #f57c00; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        searchButton.setOnMouseExited(e -> searchButton.setStyle(
-                "-fx-font-size: 13; -fx-font-weight: bold; -fx-padding: 12 40 12 40; " +
-                "-fx-background-color: #ff9800; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
+        Button searchButton = new Button("Search Buses");
+        searchButton.getStyleClass().add("primary-button");
         searchButton.setOnAction(e -> {
             String from = fromCombo.getValue();
             String to = toCombo.getValue();
-            String dateStr = datePicker.getValue().toString();
-            int passengers = passengerCombo.getValue();
-
-            if (from.equals(to)) {
-                showAlert("Error", "Departure and destination cities must be different");
+            if (from == null || to == null || from.isBlank() || to.isBlank()) {
+                showAlert("Search error", "Please choose both source and destination cities.");
                 return;
             }
-
-            NavigationContext.SearchQuery query = new NavigationContext.SearchQuery(from, to, dateStr, passengers);
-            navigationContext.setSearchQuery(query);
-            navigateToSearchResults();
+            if (from.equalsIgnoreCase(to)) {
+                showAlert("Search error", "Source and destination cities must be different.");
+                return;
+            }
+            if (datePicker.getValue() == null) {
+                showAlert("Search error", "Please select a travel date.");
+                return;
+            }
+            if (datePicker.getValue().isBefore(java.time.LocalDate.now())) {
+                showAlert("Search error", "Travel date cannot be in the past.");
+                return;
+            }
+            navigationContext.setSearchQuery(new NavigationContext.SearchQuery(from, to, datePicker.getValue().toString(), 1));
+            navigationContext.showScene(new BusResultsScreen(stage, navigationContext).getView());
         });
 
-        HBox buttonBox = new HBox();
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().add(searchButton);
+        searchRow.getChildren().addAll(fromBox, toBox, dateBox, searchButton);
+        heroCard.getChildren().addAll(heroTitle, searchRow);
 
-        searchCard.getChildren().addAll(searchTitle, new Separator(), formBox, new Separator(), buttonBox);
+        HBox quickGrid = new HBox(18);
+        quickGrid.setAlignment(Pos.CENTER_LEFT);
 
-        // Popular routes section
-        VBox popularRoutesBox = createPopularRoutesSection();
+        VBox quickSearch = createQuickCard("Search Buses", "Find the best fares for your route", "primary");
+        VBox quickBookings = createQuickCard("My Bookings", "Review your confirmed bookings", "secondary");
+        VBox quickTrack = createQuickCard("Track Bus", "Check your bus journey status", "accent");
+        quickSearch.setOnMouseClicked(e -> navigationContext.showScene(new SearchBusScreen(stage, navigationContext).getView()));
+        quickBookings.setOnMouseClicked(e -> navigationContext.showScene(new MyBookingsScreen(stage, navigationContext).getView()));
+        quickTrack.setOnMouseClicked(e -> navigationContext.showScene(new TrackBusScreen(stage, navigationContext).getView()));
+        quickGrid.getChildren().addAll(quickSearch, quickBookings, quickTrack);
 
-        // My bookings card
-        VBox myBookingsCard = new VBox(15);
-        myBookingsCard.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;");
-        myBookingsCard.setPadding(new Insets(25));
+        VBox routesCard = new VBox(16);
+        routesCard.getStyleClass().add("card");
+        routesCard.setPadding(new Insets(22));
+        routesCard.setMaxWidth(980);
 
-        Label bookingsTitle = new Label("Your Recent Bookings");
-        bookingsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        bookingsTitle.setStyle("-fx-text-fill: #003d82;");
+        Label routesTitle = new Label("Popular Routes");
+        routesTitle.getStyleClass().add("section-title");
 
-        Button viewBookingsBtn = new Button("VIEW MY BOOKINGS");
-        viewBookingsBtn.setStyle(
-                "-fx-font-size: 12; -fx-font-weight: bold; -fx-padding: 10 30 10 30; " +
-                "-fx-background-color: #0066cc; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        );
-        viewBookingsBtn.setOnMouseEntered(e -> viewBookingsBtn.setStyle(
-                "-fx-font-size: 12; -fx-font-weight: bold; -fx-padding: 10 30 10 30; " +
-                "-fx-background-color: #0052a3; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        viewBookingsBtn.setOnMouseExited(e -> viewBookingsBtn.setStyle(
-                "-fx-font-size: 12; -fx-font-weight: bold; -fx-padding: 10 30 10 30; " +
-                "-fx-background-color: #0066cc; -fx-text-fill: white; " +
-                "-fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;"
-        ));
-        viewBookingsBtn.setOnAction(e -> navigateToMyBookings());
-
-        myBookingsCard.getChildren().addAll(bookingsTitle, viewBookingsBtn);
-
-        contentBox.getChildren().addAll(searchCard, popularRoutesBox, myBookingsCard);
-
-        ScrollPane scrollPane = new ScrollPane(contentBox);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: #f8f9fa;");
-
-        root.getChildren().addAll(headerBox, scrollPane);
-        return root;
-    }
-
-    private VBox createPopularRoutesSection() {
-        VBox box = new VBox(15);
-        box.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;");
-        box.setPadding(new Insets(25));
-
-        Label title = new Label("Popular Routes");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        title.setStyle("-fx-text-fill: #003d82;");
-
+        VBox routeList = new VBox(10);
         String[][] routes = {
                 {"Chennai", "Madurai"},
                 {"Chennai", "Coimbatore"},
-                {"Coimbatore", "Madurai"},
                 {"Chennai", "Tirunelveli"},
-                {"Madurai", "Nagercoil"}
+                {"Chennai", "Trichy"},
+                {"Madurai", "Chennai"},
+                {"Coimbatore", "Chennai"}
         };
-
-        VBox routesContainer = new VBox(8);
         for (String[] route : routes) {
-            HBox routeItem = new HBox(15);
-            routeItem.setAlignment(Pos.CENTER_LEFT);
-            routeItem.setStyle("-fx-padding: 8; -fx-background-color: #f8f9fa; -fx-border-radius: 4;");
-
+            HBox row = new HBox(12);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setPadding(new Insets(8, 10, 8, 10));
+            row.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 10px;");
             Label routeLabel = new Label(route[0] + " → " + route[1]);
-            routeLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #333;");
-
+            routeLabel.setStyle("-fx-text-fill: #1e293b; -fx-font-size: 12px; -fx-font-weight: bold;");
             Region filler = new Region();
             HBox.setHgrow(filler, Priority.ALWAYS);
-
-            Button bookBtn = new Button("Book");
-            bookBtn.setStyle("-fx-font-size: 10; -fx-padding: 5 15 5 15; -fx-background-color: #ff9800; -fx-text-fill: white; -fx-border-radius: 3;");
+            Button routeButton = new Button("Book Now");
+            routeButton.getStyleClass().add("secondary-button");
             final String from = route[0];
             final String to = route[1];
-            bookBtn.setOnAction(e -> {
-                NavigationContext.SearchQuery query = new NavigationContext.SearchQuery(from, to, java.time.LocalDate.now().toString(), 1);
-                navigationContext.setSearchQuery(query);
-                navigateToSearchResults();
+            routeButton.setOnAction(e -> {
+                navigationContext.setSearchQuery(new NavigationContext.SearchQuery(from, to, java.time.LocalDate.now().toString(), 1));
+                navigationContext.showScene(new BusResultsScreen(stage, navigationContext).getView());
             });
-
-            routeItem.getChildren().addAll(routeLabel, filler, bookBtn);
-            routesContainer.getChildren().add(routeItem);
+            row.getChildren().addAll(routeLabel, filler, routeButton);
+            routeList.getChildren().add(row);
         }
+        routesCard.getChildren().addAll(routesTitle, routeList);
 
-        box.getChildren().addAll(title, routesContainer);
-        return box;
+        VBox featuresCard = new VBox(16);
+        featuresCard.getStyleClass().add("card");
+        featuresCard.setPadding(new Insets(22));
+        featuresCard.setMaxWidth(980);
+        Label featuresTitle = new Label("Why choose BusGo?");
+        featuresTitle.getStyleClass().add("section-title");
+        HBox featuresRow = new HBox(18);
+        featuresRow.getChildren().addAll(
+                createFeatureTile("✓ Easy Booking"),
+                createFeatureTile("✓ Live Seat Availability"),
+                createFeatureTile("✓ Secure Login"),
+                createFeatureTile("✓ Digital Booking Confirmation"),
+                createFeatureTile("✓ Booking History")
+        );
+        featuresCard.getChildren().addAll(featuresTitle, featuresRow);
+
+        contentBox.getChildren().addAll(heroCard, quickGrid, routesCard, featuresCard);
+
+        ScrollPane scroll = new ScrollPane(contentBox);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: #f4f7fb;");
+        root.getChildren().addAll(headerBox, scroll);
+        return root;
     }
 
-    private void navigateToSearchResults() {
-        BusResultsScreen busResultsScreen = new BusResultsScreen(stage, navigationContext);
-        Scene scene = new Scene(busResultsScreen.getView(), 1100, 750);
-        stage.setScene(scene);
+    private VBox createQuickCard(String title, String subText, String color) {
+        VBox card = new VBox(8);
+        card.getStyleClass().add("card");
+        card.setPadding(new Insets(18));
+        card.setPrefWidth(240);
+        card.setAlignment(Pos.CENTER_LEFT);
+        String borderColor = switch (color) {
+            case "secondary" -> "#dbeafe";
+            case "accent" -> "#fef3c7";
+            default -> "#ffedd5";
+        };
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + borderColor + "; -fx-border-width: 2; -fx-border-radius: 14px; -fx-background-radius: 14px; -fx-cursor: hand;");
+        Label label = new Label(title);
+        label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        label.setStyle("-fx-text-fill: #0f172a;");
+        Label text = new Label(subText);
+        text.setWrapText(true);
+        text.setStyle("-fx-text-fill: #475569; -fx-font-size: 11px;");
+        card.getChildren().addAll(label, text);
+        return card;
     }
 
-    private void navigateToMyBookings() {
-        MyBookingsScreen myBookingsScreen = new MyBookingsScreen(stage, navigationContext);
-        Scene scene = new Scene(myBookingsScreen.getView(), 1100, 750);
-        stage.setScene(scene);
+    private VBox createFeatureTile(String text) {
+        VBox tile = new VBox();
+        tile.setPadding(new Insets(12, 14, 12, 14));
+        tile.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 12px;");
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: #1e293b; -fx-font-size: 12px; -fx-font-weight: bold;");
+        tile.getChildren().add(label);
+        return tile;
     }
 
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
